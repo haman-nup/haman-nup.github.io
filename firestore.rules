@@ -44,7 +44,9 @@ service cloud.firestore {
         && existsAfter(secretPath(code))
         && getAfter(secretPath(code)).data.invite == inviteCode();
       allow update: if isTeacher(code)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['share','activity','groups','name'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['share','activity','groups','name','resetAt','resetKind'])
+        && (!('resetAt' in request.resource.data) || request.resource.data.resetAt is int)
+        && (!('resetKind' in request.resource.data) || request.resource.data.resetKind in ['recs','all'])
         && request.resource.data.share in ['solo','group','class']
         && request.resource.data.activity in ['solo','group']
         && request.resource.data.groups is list && request.resource.data.groups.size() <= 12;

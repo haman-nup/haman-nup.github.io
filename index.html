@@ -533,6 +533,15 @@ details.more[open] summary{margin-bottom:10px}
           </div>
           <h2 style="font-size:19px">올라온 기록 한눈에</h2>
           <div id="tRecs"></div>
+          <div class="resetbox" style="display:flex;flex-direction:column;gap:10px;border-top:2px dashed #c9b48a;padding-top:14px">
+            <h2 style="font-size:19px">방 비우기</h2>
+            <div class="chips" id="tResetKind" role="group" aria-label="비우는 방식"></div>
+            <p class="sub" id="tResetHelp"></p>
+            <div class="row">
+              <input type="text" id="tResetWord" autocomplete="off" placeholder="'비우기'라고 써 주세요" style="flex:1;min-width:0">
+              <button class="btn warn" type="button" id="tResetGo">방 비우기</button>
+            </div>
+          </div>
         </div>
         <div id="tPanel" hidden style="display:flex;flex-direction:column;gap:12px">
           <div class="row">
@@ -1529,7 +1538,7 @@ function tRender(){
   if(CLOUD){const r=Cloud.room||{};
     document.getElementById('tRoomLine').textContent=shortSchool(r.school||mySchool)+' · '+(r.name||'')+' · 입장 코드 '+myRoom.slice(0,3)+' '+myRoom.slice(3);
     document.getElementById('tRoomCode').textContent='입장 코드 '+myRoom.slice(0,3)+' '+myRoom.slice(3);
-    renderTeacherRoom();renderTeacherRecs();
+    renderTeacherRoom();renderTeacherRecs();renderReset();
   }else{const n=Others.list.length;
     document.getElementById('tRoomLine').textContent=shortSchool(mySchool)+' · 불러온 학생 기록 '+n+'개'+(n?'':' (학생 도감 합치기에서 파일을 불러와요)');}
   renderModeSwitch();
@@ -1773,6 +1782,7 @@ function joinRoom(code){
   Cloud.unsubs.push(roomRef().onSnapshot(s=>{
     if(!s.exists) return;
     Cloud.room=s.data();
+    applyReset();
     const firstSnap=!Cloud.room0; Cloud.room0=true; const beforeShare=share;
     activity=Cloud.room.activity==='group'?'group':'solo';
     share=['solo','group','class'].includes(Cloud.room.share)?Cloud.room.share:'solo';
@@ -1845,6 +1855,56 @@ function pushRec(r){
 function pushUnsynced(){ Store.list.filter(r=>r.status==='done'&&!r.synced&&!r.teacherRemoved).forEach(pushRec) }
 function dropRec(r){ if(Cloud.ready&&myRoom&&r&&r.synced){ Cloud.db.doc('rooms/'+myRoom+'/records/'+r.id).delete().catch(()=>{}) } }
 addEventListener('online',()=>{ if(Cloud.ready) ensureMember().then(pushUnsynced) });
+
+/* ---------- 방 비우기 ---------- */
+let resetKind='recs';
+const RESET_HELP={
+  recs:'생물 기록과 모둠 정리글을 모두 지워요. 학생 명단과 모둠은 그대로예요. 학생 폰에 남은 기록도 함께 지워져요.',
+  all:'기록, 정리글, 학생 명단을 모두 지우고, 모둠은 처음 3개로, 공유는 혼자 모드로 돌아가요. 입장 코드와 선생님 비밀번호는 그대로이고, 학생들은 이름을 다시 써요.'};
+function renderReset(){
+  const box=document.getElementById('tResetKind'); if(!box) return;
+  chipRow(box,[['recs','기록만 비우기'],['all','처음처럼 비우기']],resetKind,v=>{ resetKind=v; renderReset() });
+  document.getElementById('tResetHelp').textContent=RESET_HELP[resetKind]+' 지운 것은 되돌릴 수 없어요.';
+}
+async function resetRoom(kind){
+  const base=roomRef(), refs=[];
+  (await base.collection('records').get()).forEach(d=>refs.push(d.ref));
+  (await base.collection('features').get()).forEach(d=>refs.push(d.ref));
+  if(kind==='all') (await base.collection('members').get()).forEach(d=>refs.push(d.ref));
+  for(let i=0;i<refs.length;i+=400){ const b=Cloud.db.batch(); refs.slice(i,i+400).forEach(r=>b.delete(r)); await b.commit() }
+  const up={resetAt:Date.now(),resetKind:kind};
+  if(kind==='all'){ up.share='solo'; if(activity==='group') up.groups=newGroups(3) }
+  await base.update(up);
+  return refs.length;
+}
+document.getElementById('tResetGo').onclick=async()=>{
+  const w=document.getElementById('tResetWord'), btn=document.getElementById('tResetGo');
+  if(w.value.trim()!=='비우기'){ toast("지우려면 칸에 '비우기'라고 써 주세요."); w.focus(); return }
+  if(!Cloud.ready||!Cloud.isTeacher){ toast('선생님 메뉴를 다시 열어 주세요.'); return }
+  btn.disabled=true; btn.textContent='지우는 중…';
+  try{ await resetRoom(resetKind); w.value='';
+    toast(resetKind==='all'?'방을 처음처럼 비웠어요. 학생들은 같은 입장 코드로 이름을 다시 써요.':'방의 기록을 모두 비웠어요.') }
+  catch(e){ toast('다 지우지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.') }
+  btn.disabled=false; btn.textContent='방 비우기';
+};
+// 선생님이 방을 비우면 이 기기에 남은 그 전 기록도 지워요
+function applyReset(){
+  const t=+(Cloud.room&&Cloud.room.resetAt)||0; if(!t||!myRoom) return;
+  const k='hw-reset-'+myRoom; let last=0; try{ last=+localStorage.getItem(k)||0 }catch(e){}
+  if(last>=t) return;
+  setLS(k,String(t));
+  const before=Store.list.length;
+  Store.list=Store.list.filter(r=>(+r.created||0)>t); Store.save();
+  Others.list=[]; Others.save(); Cloud.teacherAll=[];
+  Features={}; setLS('hw-features','');
+  Seen=new Set(); setLS('hw-seen','');
+  if(Cloud.room.resetKind==='all' && !teacherDevice && !Cloud.isTeacher){
+    me=''; setLS('hw-me',''); myGroup='';
+    ['bookSheet','groupSheet','teacherSheet'].forEach(id=>{ const el=document.getElementById(id); if(el) el.hidden=true });
+    entry(); toast('선생님이 방을 새로 시작했어요. 이름을 다시 써 주세요.');
+  }else if(last && before) toast('선생님이 방의 기록을 비웠어요.');
+  updateHud(); refreshBook();
+}
 
 /* ---------- 선생님 메뉴 (공유 저장소) ---------- */
 let teacherUnsubs=[];
