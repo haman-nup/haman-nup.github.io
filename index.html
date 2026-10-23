@@ -532,17 +532,18 @@ details.more[open] summary{margin-bottom:10px}
     </form>
     <div id="tMain" hidden style="display:flex;flex-direction:column;gap:14px">
       <p class="sub" id="tRoomLine"></p>
+      <div id="tCodeBox" hidden style="display:flex;flex-direction:column;gap:10px">
+        <div class="bigcode" id="tRoomCode"></div>
+        <div class="row"><button class="btn" type="button" id="tQr">입장 QR 보기 · 인쇄</button></div>
+      </div>
       <div class="chips modesw" id="tMode" role="group" aria-label="모드"></div>
       <p class="sub" id="tModeHelp"></p>
       <div class="tbig">
         <button class="btn" type="button" id="tViewBook">학생 도감 보기</button>
         <button class="btn main" type="button" id="tMerge">학생 도감 합치기</button>
       </div>
-      <details class="more" id="tMore">
-        <summary>더 보기</summary>
+      <div style="display:flex;flex-direction:column;gap:12px;border-top:2px dashed #c9b48a;padding-top:14px">
         <div id="tCloud" hidden style="display:flex;flex-direction:column;gap:12px">
-          <div class="bigcode" id="tRoomCode"></div>
-          <div class="row"><button class="btn" type="button" id="tQr">입장 QR 보기 · 인쇄</button></div>
           <div class="f">활동 방식 <div class="chips" id="tAct"></div></div>
           <div id="tGroupBox" style="display:flex;flex-direction:column;gap:10px">
             <h2 style="font-size:19px">모둠 정하기</h2>
@@ -575,7 +576,7 @@ details.more[open] summary{margin-bottom:10px}
           </div>
           <p class="sub">합친 도감 보내기: 불러온 학생 기록을 파일 하나로 묶어요. 학생 폰마다 이 파일을 불러오면 교실 모드에서 친구 기록을 볼 수 있어요.</p>
         </div>
-      </details>
+      </div>
     </div>
     <div class="row end"><button class="btn ghost" type="button" data-close>닫기</button></div>
   </div>
@@ -1572,9 +1573,9 @@ function tRender(){
   document.getElementById('tMain').hidden=!on;document.getElementById('tLock').hidden=on;
   if(CLOUD){document.getElementById('tForgot').hidden=on;if(on)document.getElementById('tRecover').hidden=true}
   if(!on)return;
-  document.getElementById('tCloud').hidden=!CLOUD;document.getElementById('tPanel').hidden=CLOUD;
+  document.getElementById('tCloud').hidden=!CLOUD;document.getElementById('tCodeBox').hidden=!CLOUD;document.getElementById('tPanel').hidden=CLOUD;
   if(CLOUD){const r=Cloud.room||{};
-    document.getElementById('tRoomLine').textContent=shortSchool(r.school||mySchool)+' · '+(r.name||'')+' · 입장 코드 '+myRoom.slice(0,3)+' '+myRoom.slice(3);
+    document.getElementById('tRoomLine').textContent=shortSchool(r.school||mySchool)+' · '+(r.name||'');
     document.getElementById('tRoomCode').textContent='입장 코드 '+myRoom.slice(0,3)+' '+myRoom.slice(3);
     renderTeacherRoom();renderTeacherRecs();renderReset();
   }else{const n=Others.list.length;
