@@ -1,0 +1,21 @@
+{
+  "name": "함안 습지 탐험",
+  "short_name": "습지 탐험",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#14231a",
+  "theme_color": "#2f4b39",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

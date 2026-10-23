@@ -1,0 +1,129 @@
+rules_version = '2';
+
+// 함안 습지 탐험 · Firestore 보안 규칙
+// 교사 초대 코드를 바꾸려면 아래 inviteCode() 안의 글자만 바꾸세요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function inviteCode() { return 'haman2026'; }
+
+    function signedIn() { return request.auth != null; }
+    function roomPath(code) { return /databases/$(database)/documents/rooms/$(code); }
+    function secretPath(code) { return /databases/$(database)/documents/rooms/$(code)/secret/key; }
+    function memberPath(code, uid) { return /databases/$(database)/documents/rooms/$(code)/members/$(uid); }
+    function myGroup(code) {
+      return exists(memberPath(code, request.auth.uid)) ? get(memberPath(code, request.auth.uid)).data.group : '';
+    }
+    function isTeacher(code) {
+      return signedIn() && exists(/databases/$(database)/documents/rooms/$(code)/teachers/$(request.auth.uid));
+    }
+    function validRec(d) {
+      return d.keys().hasOnly(['map','x','y','name','unknown','noPhoto','drawn','desc','cat','photo','author','uid','school','group','hidden','created','updated'])
+        && d.map in ['daepyeong','jilnal','ddeun']
+        && d.x is int && d.y is int
+        && d.name is string && d.name.size() <= 30
+        && d.desc is string && d.desc.size() <= 600
+        && d.author is string && d.author.size() <= 12
+        && d.group is string && d.group.size() <= 10
+        && (d.photo == null || (d.photo is string && d.photo.size() < 900000));
+    }
+
+    // 방: 입장 코드(숫자 6자리)를 아는 사람만 읽을 수 있고, 목록은 볼 수 없어요.
+    match /rooms/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && code.matches('[0-9]{6}')
+        && request.resource.data.keys().hasOnly(['school','name','activity','share','groups','created','owner'])
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.activity in ['solo','group']
+        && request.resource.data.share == 'solo'
+        && request.resource.data.groups is list && request.resource.data.groups.size() <= 12
+        && request.resource.data.school is string && request.resource.data.school.size() <= 30
+        && request.resource.data.name is string && request.resource.data.name.size() <= 40
+        && existsAfter(secretPath(code))
+        && getAfter(secretPath(code)).data.invite == inviteCode();
+      allow update: if isTeacher(code)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['share','activity','groups','name'])
+        && request.resource.data.share in ['solo','group','class']
+        && request.resource.data.activity in ['solo','group']
+        && request.resource.data.groups is list && request.resource.data.groups.size() <= 12;
+      allow delete: if false;
+
+      // 선생님 비밀번호·복구 코드(암호화된 값). 아무도 읽을 수 없어요.
+      match /secret/{doc} {
+        allow read: if false;
+        allow create: if signedIn() && doc == 'key'
+          && !exists(roomPath(code))
+          && request.resource.data.keys().hasOnly(['pw','rec','invite'])
+          && request.resource.data.invite == inviteCode();
+        allow update: if signedIn() && doc == 'key'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pw','proof'])
+          && request.resource.data.proof == resource.data.rec;
+        allow delete: if false;
+      }
+
+      // 이 기기가 선생님인지 표시 (비밀번호가 맞을 때만 만들 수 있어요)
+      match /teachers/{uid} {
+        allow get: if signedIn() && request.auth.uid == uid;
+        allow list: if isTeacher(code);
+        allow create, update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['pw','at'])
+          && request.resource.data.pw == getAfter(secretPath(code)).data.pw;
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+
+      // 학생 명단: 이름은 학생이, 모둠은 선생님만 정해요.
+      match /members/{uid} {
+        allow get: if signedIn() && (request.auth.uid == uid || isTeacher(code));
+        allow list: if isTeacher(code);
+        allow create: if signedIn() && request.auth.uid == uid && exists(roomPath(code))
+          && request.resource.data.keys().hasOnly(['name','group','joined'])
+          && request.resource.data.name is string && request.resource.data.name.size() <= 12
+          && request.resource.data.group == '';
+        allow update: if signedIn() && (
+          (request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+            && request.resource.data.name is string && request.resource.data.name.size() <= 12)
+          || (isTeacher(code)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['group'])
+            && request.resource.data.group is string && request.resource.data.group.size() <= 10));
+        allow delete: if isTeacher(code);
+      }
+
+      // 도감 특징 문장: 모두 읽고, 선생님만 써요.
+      match /features/{fid} {
+        allow read: if signedIn();
+        allow write: if isTeacher(code)
+          && (request.resource == null || (request.resource.data.keys().hasOnly(['key','text','updated'])
+            && request.resource.data.text is string && request.resource.data.text.size() <= 400));
+      }
+
+      // 생물 기록
+      match /records/{rid} {
+        allow read: if signedIn() && (
+          resource.data.uid == request.auth.uid
+          || isTeacher(code)
+          || (resource.data.hidden == false && get(roomPath(code)).data.share == 'class')
+          || (resource.data.hidden == false && resource.data.group != ''
+              && get(roomPath(code)).data.share == 'group'
+              && resource.data.group == myGroup(code)));
+        allow create: if signedIn()
+          && exists(roomPath(code))
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.hidden == false
+          && request.resource.data.group == myGroup(code)
+          && validRec(request.resource.data);
+        allow update: if signedIn() && (
+          (resource.data.uid == request.auth.uid
+            && request.resource.data.uid == resource.data.uid
+            && request.resource.data.hidden == resource.data.hidden
+            && request.resource.data.group == myGroup(code)
+            && validRec(request.resource.data))
+          || (isTeacher(code)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden','group'])));
+        allow delete: if signedIn() && (resource.data.uid == request.auth.uid || isTeacher(code));
+      }
+    }
+  }
+}
