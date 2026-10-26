@@ -1667,7 +1667,7 @@ const NOCLOSE=['nameSheet','safetySheet','schoolSheet','roomSheet'];
 function entry(){
   if(!mySchool){ openSchool(); return }
   if(CLOUD && !myRoom){ openRoom(); return }
-  if(!me){ document.getElementById('nameInput').value=''; show('nameSheet'); return }
+  if(!me){ document.getElementById('nameInput').value=''; nameWhere(); show('nameSheet'); return }
   if(!teacherDevice) showSafety();      // 선생님 기기는 탐험 약속을 건너뛰어요
 }
 function openSchool(){
