@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#2f4b39">
 <meta name="description" content="대평늪·질날늪·뜬늪을 걸으며 생물을 기록하고 함께 도감을 만드는 함안 습지 탐험">
 <link rel="manifest" href="manifest.json">
@@ -84,7 +84,7 @@ body.touch .taphint{display:block}
 .filebtn{position:relative;overflow:hidden}
 .filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
-input[type=text],textarea{font:inherit;font-size:16px;color:var(--ink);background:#fff;border:2px solid var(--frame);border-radius:8px;padding:8px 10px;width:100%;box-sizing:border-box}
+input[type=text],input[type=password],textarea,select{font:inherit;font-size:16px;color:var(--ink);background:#fff;border:2px solid var(--frame);border-radius:8px;padding:8px 10px;width:100%;box-sizing:border-box}
 textarea{min-height:90px;resize:vertical;line-height:1.55}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:2px solid var(--frame);border-radius:20px;background:#fff;padding:4px 12px;font-size:14px}
@@ -161,6 +161,9 @@ input[type=text]:disabled{background:#ece7d3;color:var(--muted)}
   .pcard .pt{display:flex;flex-direction:column;gap:1.5mm;font-size:10.5pt;line-height:1.35}
   .pcard b{font-size:12pt}.pcard .pc{font-size:19pt;letter-spacing:.1em;font-weight:700}
 }
+.whobtn{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;text-align:left;padding:16px 18px;font-size:20px}
+.whobtn small{font-size:14px;font-weight:400;opacity:.8}
+.tedivider{border-top:2px dashed #c9b48a;margin:4px 0}
 .bigcode{font-family:var(--font-d);font-size:44px;letter-spacing:.12em;color:var(--frame);text-align:center;background:#fff;border:3px dashed var(--frame);border-radius:12px;padding:8px;font-variant-numeric:tabular-nums}
 .reccode{font-family:var(--font-d);font-size:24px;letter-spacing:.1em;text-align:center;background:#fff6dc;border:2px solid var(--gold);border-radius:10px;padding:6px}
 .linkbtn{border:none;background:none;padding:0;color:var(--frame);text-decoration:underline;font-size:14px}
@@ -279,11 +282,47 @@ details.more[open] summary{margin-bottom:10px}
     <input type="text" id="roomCode" class="codein" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="000000" aria-label="입장 코드 6자리">
     <p class="err" id="roomErr" hidden></p>
     <div class="row" style="justify-content:space-between">
-      <button class="linkbtn" type="button" id="roomBack">학교 다시 고르기</button>
-      <div class="row"><button class="btn" type="button" id="roomTeacher">선생님으로 시작</button><button class="btn main" type="submit">들어가기</button></div>
+      <button class="linkbtn" type="button" id="roomBack">← 뒤로</button>
+      <button class="btn main" type="submit">들어가기</button>
     </div>
-    <div class="row" style="justify-content:flex-end"><button class="linkbtn" type="button" id="roomCreate">선생님: 새 방 만들기</button></div>
   </form>
+</div>
+
+<!-- 누구인가요 -->
+<div class="sheet" id="whoSheet" hidden>
+  <div class="card narrow">
+    <h2>누구인가요?</h2>
+    <p class="sub" id="whoSchool"></p>
+    <button class="btn main whobtn" type="button" id="whoStudent">🎒 학생이에요<small>선생님께 입장 코드나 QR을 받았어요</small></button>
+    <button class="btn whobtn" type="button" id="whoTeacher">🧑‍🏫 선생님이에요<small>방을 만들거나, 우리 반 방을 관리해요</small></button>
+    <div class="row"><button class="linkbtn" type="button" id="whoBack">학교 다시 고르기</button></div>
+  </div>
+</div>
+
+<!-- 선생님 입장 -->
+<div class="sheet" id="tEntrySheet" hidden>
+  <div class="card narrow">
+    <h2>선생님</h2>
+    <p class="sub" id="teSchool"></p>
+    <form id="teForm" style="display:flex;flex-direction:column;gap:10px">
+      <h3 style="margin:0;font-size:18px">우리 반 방으로 들어가기</h3>
+      <input type="text" id="teCode" class="codein" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="000000" aria-label="입장 코드 6자리">
+      <input type="password" id="tePw" placeholder="선생님 비밀번호" autocomplete="current-password" aria-label="선생님 비밀번호">
+      <p class="err" id="teErr" hidden></p>
+      <div class="row" style="justify-content:space-between">
+        <button class="linkbtn" type="button" id="teForgot">비밀번호를 잊었어요</button>
+        <button class="btn main" type="submit">들어가기</button>
+      </div>
+    </form>
+    <div class="tedivider"></div>
+    <h3 style="margin:0;font-size:18px">처음이거나, 새 방이 필요해요</h3>
+    <p class="sub">수업 전에 시험해 볼 방을 하나 더 만들어도 괜찮아요.</p>
+    <div class="row"><button class="btn" type="button" id="roomCreate">새 방 만들기</button></div>
+    <div class="row" style="justify-content:space-between">
+      <button class="linkbtn" type="button" id="teBack">← 뒤로</button>
+      <button class="linkbtn" type="button" id="teSchoolBtn">학교 다시 고르기</button>
+    </div>
+  </div>
 </div>
 
 <!-- 새 방 만들기 -->
@@ -531,7 +570,7 @@ details.more[open] summary{margin-bottom:10px}
       <div class="row end"><button class="btn main" type="submit">비밀번호 다시 정하기</button></div>
     </form>
     <div id="tMain" hidden style="display:flex;flex-direction:column;gap:14px">
-      <p class="sub" id="tRoomLine"></p>
+      <div class="row" style="justify-content:space-between;align-items:center"><p class="sub" id="tRoomLine" style="margin:0"></p><button class="btn" type="button" id="tSwitchRoom" hidden>다른 방 · 새 방 만들기</button></div>
       <div id="tCodeBox" hidden style="display:flex;flex-direction:column;gap:10px">
         <div class="bigcode" id="tRoomCode"></div>
         <div class="row"><button class="btn" type="button" id="tQr">입장 QR 보기 · 인쇄</button></div>
@@ -1249,7 +1288,9 @@ document.getElementById('btnWhole').onclick=openWhole;
 document.getElementById('btnBook').onclick=openBook;
 
 /* ---------- 맵 누르기로 걷기 ---------- */
+let zoomWarn=0;
 cv.addEventListener('pointerdown',e=>{if(anySheet())return;
+  if(window.visualViewport&&visualViewport.scale>1.05){ if(Date.now()-zoomWarn>3000){ zoomWarn=Date.now(); toast('화면이 커져 있어요. 두 손가락으로 오므려 줄여 주세요.') } return }
   const wx=(e.clientX*DPR+cam.x*S)/S, wy=(e.clientY*DPR+cam.y*S)/S;
   const x=Math.floor(wx/TS),y=Math.floor(wy/TS);if(!inMap(x,y))return;
   if(calibMode){doCalib(x,y);return}
@@ -1573,7 +1614,7 @@ function tRender(){
   document.getElementById('tMain').hidden=!on;document.getElementById('tLock').hidden=on;
   if(CLOUD){document.getElementById('tForgot').hidden=on;if(on)document.getElementById('tRecover').hidden=true}
   if(!on)return;
-  document.getElementById('tCloud').hidden=!CLOUD;document.getElementById('tCodeBox').hidden=!CLOUD;document.getElementById('tPanel').hidden=CLOUD;
+  document.getElementById('tCloud').hidden=!CLOUD;document.getElementById('tCodeBox').hidden=!CLOUD;document.getElementById('tSwitchRoom').hidden=!CLOUD;document.getElementById('tPanel').hidden=CLOUD;
   if(CLOUD){const r=Cloud.room||{};
     document.getElementById('tRoomLine').textContent=shortSchool(r.school||mySchool)+' · '+(r.name||'');
     document.getElementById('tRoomCode').textContent='입장 코드 '+myRoom.slice(0,3)+' '+myRoom.slice(3);
@@ -1663,10 +1704,10 @@ try{ mySchool=localStorage.getItem('hw-school')||''; myRoom=localStorage.getItem
 function setLS(k,v){ try{ v?localStorage.setItem(k,v):localStorage.removeItem(k) }catch(e){} }
 
 /* ---------- 들어가는 순서: 학교 → (방 코드) → 이름 → 탐험 약속 ---------- */
-const NOCLOSE=['nameSheet','safetySheet','schoolSheet','roomSheet'];
+const NOCLOSE=['nameSheet','safetySheet','schoolSheet','roomSheet','whoSheet','tEntrySheet'];
 function entry(){
   if(!mySchool){ openSchool(); return }
-  if(CLOUD && !myRoom){ openRoom(); return }
+  if(CLOUD && !myRoom){ openWho(); return }
   if(!me){ document.getElementById('nameInput').value=''; nameWhere(); show('nameSheet'); return }
   if(!teacherDevice) showSafety();      // 선생님 기기는 탐험 약속을 건너뛰어요
 }
@@ -1689,14 +1730,53 @@ function openRoom(){
   document.getElementById('roomCode').value=''; document.getElementById('roomErr').hidden=true;
   show('roomSheet'); setTimeout(()=>document.getElementById('roomCode').focus(),50);
 }
-document.getElementById('roomBack').onclick=()=>{ hide('roomSheet'); mySchool=''; setLS('hw-school',''); openSchool() };
+document.getElementById('roomBack').onclick=()=>{ hide('roomSheet'); openWho() };
+function openWho(){
+  document.getElementById('whoSchool').textContent=mySchool;
+  ['roomSheet','tEntrySheet'].forEach(hide); show('whoSheet');
+}
+function backToSchool(){ ['whoSheet','roomSheet','tEntrySheet'].forEach(hide); mySchool=''; setLS('hw-school',''); openSchool() }
+document.getElementById('whoBack').onclick=backToSchool;
+document.getElementById('teSchoolBtn').onclick=backToSchool;
+document.getElementById('whoStudent').onclick=()=>{ hide('whoSheet'); if(teacherDevice){ teacherDevice=false; setLS('hw-tdev',''); if(me==='선생님'){ me=''; setLS('hw-me','') } } openRoom() };
+document.getElementById('whoTeacher').onclick=()=>{ hide('whoSheet'); openTeacherEntry() };
+document.getElementById('teBack').onclick=()=>{ hide('tEntrySheet'); openWho() };
+function openTeacherEntry(){
+  document.getElementById('teSchool').textContent=mySchool;
+  document.getElementById('teCode').value=''; document.getElementById('tePw').value=''; document.getElementById('teErr').hidden=true;
+  show('tEntrySheet');
+}
+function teErr(t){ const e=document.getElementById('teErr'); e.textContent=t; e.hidden=false }
+async function teacherEnter(forgot){
+  const code=document.getElementById('teCode').value.replace(/\D/g,''), pw=document.getElementById('tePw').value;
+  if(code.length!==6){ teErr('입장 코드는 숫자 6자리예요.'); return }
+  if(!forgot&&!pw){ teErr('선생님 비밀번호를 넣어 주세요.'); return }
+  if(!Cloud.ready){ teErr(Cloud.why||'연결하는 중이에요. 잠시 후 다시 눌러 주세요.'); return }
+  try{
+    const snap=await Cloud.db.doc('rooms/'+code).get();
+    if(!snap.exists){ teErr('그런 방이 없어요. 입장 코드를 다시 확인해 주세요.'); return }
+    const r=snap.data();
+    if(r.school!==mySchool){ teErr('이 코드는 '+shortSchool(r.school)+' 방이에요. 학교를 다시 확인해 주세요.'); return }
+    const prev=myRoom; myRoom=code;
+    if(!forgot){
+      try{ await teacherLogin(pw) }
+      catch(err){ myRoom=prev; Cloud.isTeacher=false; teErr(err&&err.code==='permission-denied'?'비밀번호가 맞지 않아요.':'연결을 확인해 주세요.'); return }
+    }
+    becomeTeacherDevice(); joinRoom(code); hide('tEntrySheet'); updateHud();
+    toast((r.name||'습지 탐험')+' 방에 들어왔어요!');
+    openTeacher();
+    if(forgot){ document.getElementById('tRecover').hidden=false; document.getElementById('tRecErr').hidden=true }
+  }catch(err){ teErr(err&&err.code==='unavailable'?'인터넷 연결을 확인해 주세요.':'방을 찾지 못했어요. 잠시 후 다시 해 주세요.') }
+}
+document.getElementById('teForm').addEventListener('submit',e=>{ e.preventDefault(); teacherEnter(false) });
+document.getElementById('teForgot').onclick=()=>teacherEnter(true);
+document.getElementById('tSwitchRoom').onclick=()=>{ hide('teacherSheet'); leaveRoom(); updateHud(); openTeacherEntry() };
 document.getElementById('btnPlace').onclick=()=>{ hide('nameSheet'); teacherDevice=false; setLS('hw-tdev',''); leaveRoom(); mySchool=''; setLS('hw-school',''); openSchool() };
 function roomErr(t){ const e=document.getElementById('roomErr'); e.textContent=t; e.hidden=false }
 let teacherDevice=false;try{teacherDevice=localStorage.getItem('hw-tdev')==='1'}catch(e){}
 function becomeTeacherDevice(){teacherDevice=true;setLS('hw-tdev','1');if(!me){me='선생님';setLS('hw-me',me)}}
 function openTeacher(){document.getElementById('btnTeacher').click()}
 document.getElementById('roomForm').addEventListener('submit',e=>{e.preventDefault();enterRoom(false)});
-document.getElementById('roomTeacher').onclick=()=>enterRoom(true);
 document.getElementById('nameTeacher').onclick=()=>{becomeTeacherDevice();hide('nameSheet');updateHud();openTeacher()};
 async function enterRoom(asTeacher){
   const code=document.getElementById('roomCode').value.replace(/\D/g,'');
@@ -1765,7 +1845,7 @@ document.getElementById('cForm').addEventListener('submit',async e=>{
     cErr(err&&err.code==='permission-denied'?'교사 초대 코드가 맞지 않아요.':'방을 만들지 못했어요. 인터넷 연결을 확인해 주세요.');
   }
 });
-document.getElementById('cStart').onclick=()=>{ hide('createSheet'); hide('roomSheet'); entry() };
+document.getElementById('cStart').onclick=()=>{ ['createSheet','roomSheet','tEntrySheet','whoSheet'].forEach(hide); becomeTeacherDevice(); updateHud(); openTeacher() };
 
 /* ---------- 공유 저장소 연결 ---------- */
 const Cloud={ready:false,db:null,uid:'',why:'',room:null,isTeacher:false,unsubs:[],teacherAll:[],members:[],teacherUids:new Set()};
@@ -1908,7 +1988,7 @@ async function joinFromQr(){
     const r=snap.data();
     if(myRoom&&myRoom!==code) leaveRoom();
     mySchool=r.school; setLS('hw-school',r.school);
-    ['schoolSheet','roomSheet'].forEach(hide);
+    ['schoolSheet','roomSheet','whoSheet','tEntrySheet'].forEach(hide);
     joinRoom(code); updateHud(); toast((r.name||'습지 탐험')+' 방에 들어왔어요!'); entry();
   }catch(e){ pendingJoin=''; toast('방을 찾지 못했어요. 인터넷 연결을 확인해 주세요.'); entry() }
 }
@@ -1936,7 +2016,7 @@ document.getElementById('qrPrint').onclick=()=>{
   if(qrKindV==='big'){
     pa.innerHTML='<div class="pbig"><h1>함안 습지 탐험</h1><p class="ps">'+esc(i.school)+' · '+esc(i.name)+'</p><div class="pq">'+svg+'</div>'
       +'<div class="pc">'+code+'</div><ol><li>휴대폰 카메라로 QR을 찍어요.</li><li>뜨는 주소를 눌러 사이트를 열어요.</li><li>내 이름을 쓰면 탐험 시작!</li></ol>'
-      +'<p class="ps">QR이 안 되면: '+esc(location.host+location.pathname.replace(/\/$/,''))+' → 학교 고르기 → 입장 코드 '+code+'</p></div>';
+      +'<p class="ps">QR이 안 되면: '+esc(location.host+location.pathname.replace(/\/$/,''))+' → 학교 고르기 → 학생이에요 → 입장 코드 '+code+'</p></div>';
   }else{
     const card='<div class="pcard"><div class="pq">'+svg+'</div><div class="pt"><b>함안 습지 탐험</b><span>'+esc(i.school)+'</span>'
       +'<span class="pc">'+code+'</span><span>카메라로 찍고<br>이름을 쓰면 시작!</span></div></div>';
